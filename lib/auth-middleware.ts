@@ -12,13 +12,13 @@ export interface AuthenticatedRequest extends NextRequest {
   }
 }
 
-export async function withAuth(
+export function withAuth(
   handler: (req: AuthenticatedRequest) => Promise<NextResponse>,
   options: {
     requireAdmin?: boolean
     requireAuth?: boolean
   } = { requireAuth: true }
-) {
+): (req: NextRequest) => Promise<NextResponse> {
   return async (req: NextRequest) => {
     try {
       // Skip auth check if not required

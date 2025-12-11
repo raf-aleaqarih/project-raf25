@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { rateLimit, requireAdmin } from '@/lib/auth-middleware'
+import {
+  AuthenticatedRequest,
+  withAuth,
+  withRateLimit
+} from '@/lib/auth-middleware'
 import connectDB from '@/lib/mongodb'
 import SystemSetting from '@/lib/models/SystemSetting'
 
@@ -48,20 +52,18 @@ const settingsSchema = z.object({
   })
 })
 
+const withAdminAndRateLimit = (
+  handler: (req: AuthenticatedRequest) => Promise<NextResponse>
+): ((req: NextRequest) => Promise<NextResponse>) =>
+  withRateLimit(withAuth(handler, { requireAuth: true, requireAdmin: true }))
+
 // GET - Retrieve system settings
-export async function GET(request: NextRequest) {
+const handleGet = async (request: AuthenticatedRequest) => {
   try {
-    // Apply rate limiting
-    const rateLimitResult = await rateLimit(request)
-    if (rateLimitResult) return rateLimitResult
-
-    // Verify admin access
-    const adminResult = await requireAdmin(request)
-    if (adminResult) return adminResult
-
     // Ensure DB connection and get latest settings document
     await connectDB()
     const doc = await SystemSetting?.findOne({}).sort({ updatedAt: -1 }).lean()
+    const settings = doc?.settings
 
     if (!settings) {
       // Return default settings if none exist
@@ -116,10 +118,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: doc?.settings
+      data: settings
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Settings retrieval error:', error)
     return NextResponse.json(
       { 
@@ -132,17 +134,9 @@ export async function GET(request: NextRequest) {
 }
 
 // PUT - Update system settings
-export async function PUT(request: NextRequest) {
+const handlePut = async (request: AuthenticatedRequest) => {
   try {
-    // Apply rate limiting
-    const rateLimitResult = await rateLimit(request)
-    if (rateLimitResult) return rateLimitResult
-
-    // Verify admin access
-    const adminResult = await requireAdmin(request)
-    if (adminResult) return adminResult
-
-    const body = await request.json()
+    const body = await (request as NextRequest).json()
 
     // Validate settings data
     const validatedSettings = settingsSchema.parse(body)
@@ -161,7 +155,7 @@ export async function PUT(request: NextRequest) {
       data: updatedDoc?.settings
     })
 
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { 
@@ -185,16 +179,8 @@ export async function PUT(request: NextRequest) {
 }
 
 // POST - Reset settings to defaults
-export async function POST(request: NextRequest) {
+const handlePost = async (_request: AuthenticatedRequest) => {
   try {
-    // Apply rate limiting
-    const rateLimitResult = await rateLimit(request)
-    if (rateLimitResult) return rateLimitResult
-
-    // Verify admin access
-    const adminResult = await requireAdmin(request)
-    if (adminResult) return adminResult
-
     const defaultSettings = {
       general: {
         siteName: 'مشروع جدة السكني',
@@ -252,7 +238,7 @@ export async function POST(request: NextRequest) {
       data: resetDoc?.settings
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Settings reset error:', error)
     return NextResponse.json(
       { 
@@ -265,17 +251,9 @@ export async function POST(request: NextRequest) {
 }
 
 // PATCH - Update specific setting section
-export async function PATCH(request: NextRequest) {
+const handlePatch = async (request: AuthenticatedRequest) => {
   try {
-    // Apply rate limiting
-    const rateLimitResult = await rateLimit(request)
-    if (rateLimitResult) return rateLimitResult
-
-    // Verify admin access
-    const adminResult = await requireAdmin(request)
-    if (adminResult) return adminResult
-
-    const body = await request.json()
+    const body = await (request as NextRequest).json()
     const { section, data } = body
 
     if (!section || !data) {
@@ -326,7 +304,7 @@ export async function PATCH(request: NextRequest) {
       data: resultDoc?.settings
     })
 
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { 
@@ -348,3 +326,8 @@ export async function PATCH(request: NextRequest) {
     )
   }
 }
+
+export const GET = withAdminAndRateLimit(handleGet)
+export const PUT = withAdminAndRateLimit(handlePut)
+export const POST = withAdminAndRateLimit(handlePost)
+export const PATCH = withAdminAndRateLimit(handlePatch)
