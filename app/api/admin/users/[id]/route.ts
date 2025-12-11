@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb'
 import { User } from '@/lib/models/User'
 import { jwtService } from '@/lib/jwt-service'
 import { z } from 'zod'
+export const runtime = 'nodejs'
 
 const updateUserSchema = z.object({
   name: z.string().min(2, 'الاسم يجب أن يكون حرفين على الأقل').max(50, 'الاسم يجب أن يكون أقل من 50 حرف').optional(),

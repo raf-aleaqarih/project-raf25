@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 
-const MONGODB_URI = `mongodb+srv://yussefaliit:VOgctOW8wYt43J8W@cluster0.kh1mn12.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+// Read connection string from environment instead of hardcoding credentials
+const MONGODB_URI = process.env.MONGODB_URI || ''
 
 if (!MONGODB_URI) {
   console.warn('⚠️  MONGODB_URI not defined. Using fallback mode.')

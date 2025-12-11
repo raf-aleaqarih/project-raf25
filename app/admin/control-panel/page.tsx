@@ -50,6 +50,7 @@ import apiService from "@/lib/api-service"
 import { WebsiteData } from "@/lib/website-data"
 import { validateWebsiteData, validateSection, ValidationError } from "@/lib/data-validation"
 import { toast } from 'react-toastify'
+export const dynamic = 'force-dynamic'
 
 // Icon mapping
 const iconMap: { [key: string]: any } = {

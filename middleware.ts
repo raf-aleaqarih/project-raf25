@@ -4,10 +4,28 @@ import { config } from '@/lib/config'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const origin = request.nextUrl.origin
 
   // Check if the path is protected (admin routes)
   const isProtectedRoute = pathname.startsWith('/admin')
   const isAuthRoute = pathname.startsWith('/auth')
+  const isApiRoute = pathname.startsWith('/api')
+
+  // Add CORS headers for API requests from admin panel
+  if (isApiRoute) {
+    const response = NextResponse.next()
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    
+    // Handle OPTIONS request
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 200, headers: response.headers })
+    }
+    
+    return response
+  }
 
   // Get token from cookies
   const token = request.cookies.get('accessToken')?.value
@@ -46,6 +64,7 @@ export function middleware(request: NextRequest) {
   if (isAuthRoute && token) {
     const payload = jwtService.decodeToken(token)
     if (payload) {
+      // Redirect to external admin panel if it exists, otherwise to control panel
       return NextResponse.redirect(new URL('/admin/control-panel', request.url))
     }
   }
