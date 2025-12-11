@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { JWTService } from './jwt-service'
+import { jwtService } from './jwt-service'
 import connectDB from './mongodb'
 import { User } from '@/lib/models/User'
 
@@ -38,7 +38,7 @@ export async function withAuth(
       }
 
       // Verify token
-      const decoded = JWTService.verifyToken(token)
+      const decoded = jwtService.verifyToken(token)
       if (!decoded || !decoded.userId) {
         return NextResponse.json(
           { error: 'Invalid or expired token' },
