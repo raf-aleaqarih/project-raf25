@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtService } from '@/lib/jwt-service'
-import { config } from '@/lib/config'
+import { config as appConfig } from '@/lib/config'  // غيرنا الاسم لتجنب التعارض
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const origin = request.nextUrl.origin
 
   // Check if the path is protected (admin routes)
   const isProtectedRoute = pathname.startsWith('/admin')
@@ -64,7 +63,7 @@ export function middleware(request: NextRequest) {
   if (isAuthRoute && token) {
     const payload = jwtService.decodeToken(token)
     if (payload) {
-      // Redirect to external admin panel if it exists, otherwise to control panel
+      // Redirect to control panel
       return NextResponse.redirect(new URL('/admin/control-panel', request.url))
     }
   }
@@ -72,7 +71,8 @@ export function middleware(request: NextRequest) {
   return NextResponse.next()
 }
 
-export const config = {
+// Config for Next.js middleware
+export const middlewareConfig  = {
   matcher: [
     '/admin/:path*',
     '/auth/:path*',
